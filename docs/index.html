@@ -622,7 +622,9 @@ function buildCard(a, idx) {
     ['ID', articleId],
     ['Title', a.title],
     ['Date', dateDisplay],
-    ['Author', a.author],
+    ['Byline', a.byline],
+    ["Author's Title", a.author_title],
+    ['Image Alt Text', a.hero_image_alt],
     ['Facility', a.facility],
     ['State', a.state],
     ['Meta Desc.', a.meta_description],
@@ -644,7 +646,7 @@ function buildCard(a, idx) {
   }).join('');
 
   return `
-  <article class="card" data-type="${a.type}" data-state="${a.state}" data-scraped="${a.scraped_date}" data-hasimage="${imgSrc ? 'yes' : 'no'}" data-search="${(a.title + ' ' + a.facility + ' ' + a.state + ' ' + a.meta_description + ' ' + a.author + ' ' + articleId).toLowerCase()}">
+  <article class="card" data-type="${a.type}" data-state="${a.state}" data-scraped="${a.scraped_date}" data-hasimage="${imgSrc ? 'yes' : 'no'}" data-search="${(a.title + ' ' + a.facility + ' ' + a.state + ' ' + a.meta_description + ' ' + a.byline + ' ' + articleId).toLowerCase()}">
     <div class="card-select">
       <input type="checkbox" id="sel-${articleId}" onchange="toggleSelection('${articleId}', this)">
       <label for="sel-${articleId}">Select for VA News &nbsp;·&nbsp; <strong>${articleId}</strong></label>
