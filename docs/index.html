@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VA Facility News Hub</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --va-blue: #003F72;
+      --va-dark: #112E51;
+      --va-link: #0071BB;
+      --va-light-blue: #E1F3F8;
+      --bg: #F5F5F5;
+      --white: #FFFFFF;
+      --text: #212121;
+      --text-light: #565C65;
+      --border: #DFE1E2;
+      --success: #00A91C;
+      --radius: 6px;
+    }
+
+    body {
+      font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    .site-header {
+      background: linear-gradient(135deg, var(--va-dark), var(--va-blue));
+      color: white;
+      padding: 28px 32px 24px;
+    }
+    .site-header h1 { font-size: 26px; font-weight: 700; }
+    .site-header p { color: #A9AEB1; margin-top: 2px; font-size: 15px; }
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .stat-chip {
+      background: rgba(255,255,255,0.12);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    .stat-chip strong { font-size: 16px; margin-right: 4px; }
+
+    /* ── Filters ───────────────────────────────────────── */
+    .filters {
+      background: var(--white);
+      padding: 14px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .filters input, .filters select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .filters input { flex: 1; min-width: 200px; }
+    .filters select { min-width: 140px; }
+    .filter-count {
+      color: var(--text-light);
+      font-size: 13px;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* ── Main ──────────────────────────────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 24px 60px;
+    }
+
+    /* ── Article Card ──────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .card-top {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .card-img-wrap {
+      flex-shrink: 0;
+      width: 260px;
+      position: relative;
+    }
+    .card-img-wrap img {
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      border-radius: 4px;
+      display: block;
+      background: #e9e9e9;
+    }
+    .card-img-wrap .img-dl {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      background: rgba(0,0,0,0.72);
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-img-wrap .img-dl:hover { background: rgba(0,0,0,0.9); }
+    .no-image {
+      width: 100%;
+      height: 170px;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .card-summary { flex: 1; min-width: 0; }
+
+    .card-badges {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .badge-story { background: var(--va-light-blue); color: var(--va-blue); }
+    .badge-release { background: #FFF1E0; color: #9A6700; }
+    .card-date-badge { color: var(--text-light); font-size: 13px; }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--va-dark);
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .card-facility {
+      color: var(--text-light);
+      font-size: 13px;
+    }
+
+    /* ── Metadata rows ─────────────────────────────────── */
+    .meta-section {
+      border-top: 1px solid var(--border);
+      padding: 12px 20px;
+    }
+    .meta-row {
+      display: flex;
+      align-items: flex-start;
+      padding: 5px 0;
+      gap: 8px;
+    }
+    .meta-label {
+      flex-shrink: 0;
+      width: 115px;
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding-top: 3px;
+    }
+    .meta-value {
+      flex: 1;
+      font-size: 13px;
+      word-break: break-word;
+      min-width: 0;
+    }
+    .meta-value a {
+      color: var(--va-link);
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .meta-value a:hover { text-decoration: underline; }
+
+    /* ── Copy button ───────────────────────────────────── */
+    .cp {
+      flex-shrink: 0;
+      background: #EEF6EE;
+      color: #2E7D32;
+      border: 1px solid #C8E6C9;
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .cp:hover { background: #C8E6C9; }
+    .cp.ok {
+      background: var(--success);
+      color: #fff;
+      border-color: var(--success);
+    }
+
+    /* ── Body section ──────────────────────────────────── */
+    .body-section { border-top: 1px solid var(--border); }
+    .body-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--va-link);
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .body-toggle:hover { background: #F7F9FA; }
+    .body-toggle .arr { transition: transform 0.15s; display: inline-block; }
+    .body-toggle.open .arr { transform: rotate(90deg); }
+
+    .body-wrap {
+      display: none;
+      padding: 0 20px 16px;
+    }
+    .body-wrap.open { display: block; }
+    .body-rendered {
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 16px;
+      background: #FAFAFA;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .body-rendered p { margin-bottom: 10px; }
+    .body-rendered strong { font-weight: 700; }
+    .body-rendered blockquote {
+      border-left: 3px solid var(--va-blue);
+      padding-left: 12px;
+      color: var(--text-light);
+      margin: 10px 0;
+    }
+    .body-rendered ul, .body-rendered ol {
+      margin: 10px 0 10px 20px;
+    }
+    .body-rendered li { margin-bottom: 4px; }
+    .body-rendered img { max-width: 100%; height: auto; border-radius: 4px; margin: 8px 0; }
+    .body-rendered a { color: var(--va-link); }
+    .body-rendered hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .body-rendered h1, .body-rendered h2, .body-rendered h3 {
+      margin: 16px 0 8px;
+      color: var(--va-dark);
+    }
+    .body-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    /* ── Checkbox ───────────────────────────────────────── */
+    .card-select {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #FAFBFC;
+    }
+    .card-select input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--va-blue);
+    }
+    .card-select label {
+      font-size: 12px;
+      color: var(--text-light);
+      cursor: pointer;
+      user-select: none;
+    }
+    .card.selected {
+      border-color: var(--va-blue);
+      box-shadow: 0 0 0 2px rgba(0,63,114,0.15);
+    }
+
+    /* ── Selection Bar ─────────────────────────────────── */
+    .selection-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--va-dark);
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 200;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+      transform: translateY(100%);
+      transition: transform 0.2s ease;
+    }
+    .selection-bar.visible { transform: translateY(0); }
+    .selection-bar .sel-count {
+      font-weight: 700;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+    .selection-bar .sel-ids {
+      flex: 1;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      color: #A9AEB1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .selection-bar .sel-btn {
+      background: white;
+      color: var(--va-dark);
+      border: none;
+      padding: 8px 18px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .selection-bar .sel-btn:hover { background: #E1F3F8; }
+    .selection-bar .sel-btn.ok { background: var(--success); color: white; }
+    .selection-bar .sel-clear {
+      background: transparent;
+      color: #A9AEB1;
+      border: 1px solid #A9AEB1;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .selection-bar .sel-clear:hover { color: white; border-color: white; }
+
+    /* ── Scrape date filter chip ────────────────────────── */
+    .scrape-filter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .scrape-filter select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      min-width: 160px;
+    }
+
+    /* ── Loading / empty ───────────────────────────────── */
+    .loading, .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+      font-size: 16px;
+    }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .card-top { flex-direction: column; }
+      .card-img-wrap { width: 100%; }
+      .card-img-wrap img { height: 200px; }
+      .filters { padding: 10px 16px; }
+      .filters input { min-width: 140px; }
+      main { padding: 16px 12px 60px; }
+      .site-header { padding: 20px 16px; }
+      .meta-label { width: 90px; font-size: 10px; }
+      .selection-bar { flex-wrap: wrap; }
+      .selection-bar .sel-ids { order: 3; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>VA Facility News Hub</h1>
+  <p>Stories and news releases from VA medical facilities — copy-ready for WordPress</p>
+  <div class="stats-bar" id="stats"></div>
+</header>
+
+<div class="filters">
+  <input type="text" id="search" placeholder="Search titles, facilities, states, keywords...">
+  <select id="typeFilter">
+    <option value="">All Types</option>
+    <option value="stories">Stories</option>
+    <option value="news-releases">News Releases</option>
+  </select>
+  <select id="stateFilter">
+    <option value="">All States</option>
+  </select>
+  <select id="scrapeFilter">
+    <option value="">All Dates Scraped</option>
+  </select>
+  <select id="imageFilter">
+    <option value="">All Articles</option>
+    <option value="yes">Has Featured Image</option>
+    <option value="no">No Featured Image</option>
+  </select>
+  <span class="filter-count" id="filterCount"></span>
+</div>
+
+<main>
+  <div id="articles"><div class="loading">Loading articles...</div></div>
+</main>
+
+<div class="selection-bar" id="selectionBar">
+  <span class="sel-count" id="selCount">0 selected</span>
+  <span class="sel-ids" id="selIds"></span>
+  <button class="sel-btn" onclick="copySelectionIds()">Copy IDs</button>
+  <button class="sel-clear" onclick="clearSelections()">Clear</button>
+</div>
+
+<script>
+/* ── Minimal Markdown Renderer ─────────────────────────────────────── */
+function renderMd(text) {
+  if (!text) return '';
+  // Escape HTML
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const raw = esc(text);
+
+  // Inline formatting
+  function inl(s) {
+    return s
+      .replace(/!\[(.*?)\]\((.*?)\)/g, '<img alt="$1" src="$2" style="max-width:100%">')
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+  }
+
+  return raw.split(/\n\n+/).map(block => {
+    block = block.trim();
+    if (!block) return '';
+    if (block.startsWith('&gt; '))
+      return '<blockquote>' + inl(block.replace(/^&gt; /gm, '')) + '</blockquote>';
+    if (/^\* /m.test(block)) {
+      const items = block.split('\n').filter(l => l.startsWith('* '));
+      return '<ul>' + items.map(i => '<li>' + inl(i.slice(2)) + '</li>').join('') + '</ul>';
+    }
+    if (block === '---') return '<hr>';
+    if (block.startsWith('### ')) return '<h3>' + inl(block.slice(4)) + '</h3>';
+    if (block.startsWith('## '))  return '<h2>' + inl(block.slice(3)) + '</h2>';
+    if (block.startsWith('# '))   return '<h1>' + inl(block.slice(2)) + '</h1>';
+    return '<p>' + inl(block) + '</p>';
+  }).join('\n');
+}
+
+/* ── Copy to Clipboard ─────────────────────────────────────────────── */
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1200);
+  });
+}
+
+/* ── Image Download ────────────────────────────────────────────────── */
+function downloadImage(url, filename) {
+  fetch(url).then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }).catch(() => {
+    // Fallback: open in new tab
+    window.open(url, '_blank');
+  });
+}
+
+/* ── Format date for display ───────────────────────────────────────── */
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+/* ── Selection Tracking ─────────────────────────────────────────────── */
+const selectedIds = new Set();
+
+function toggleSelection(id, checkbox) {
+  const card = checkbox.closest('.card');
+  if (checkbox.checked) {
+    selectedIds.add(id);
+    card.classList.add('selected');
+  } else {
+    selectedIds.delete(id);
+    card.classList.remove('selected');
+  }
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  const countEl = document.getElementById('selCount');
+  const idsEl = document.getElementById('selIds');
+  const n = selectedIds.size;
+
+  if (n === 0) {
+    bar.classList.remove('visible');
+    return;
+  }
+
+  bar.classList.add('visible');
+  countEl.textContent = n + ' selected';
+  const idList = [...selectedIds].join(', ');
+  idsEl.textContent = idList;
+}
+
+function copySelectionIds() {
+  const idList = [...selectedIds].join(', ');
+  const btn = document.querySelector('.sel-btn');
+  navigator.clipboard.writeText(idList).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Copy IDs'; btn.classList.remove('ok'); }, 1500);
+  });
+}
+
+function clearSelections() {
+  selectedIds.clear();
+  document.querySelectorAll('.card-select input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+  document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+  updateSelectionBar();
+}
+
+/* ── Build a single card ───────────────────────────────────────────── */
+function buildCard(a, idx) {
+  const typeClass = a.type === 'stories' ? 'badge-story' : 'badge-release';
+  const typeLabel = a.type === 'stories' ? 'Story' : 'News Release';
+  const dateDisplay = fmtDate(a.date);
+  const imgSrc = a.hero_image || '';
+  const dlSrc = a.hero_image || a.hero_image_url || '';
+  const articleId = a.id || '';
+
+  // Image block
+  let imgHtml;
+  if (imgSrc) {
+    const fname = a.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40) + imgSrc.substring(imgSrc.lastIndexOf('.'));
+    imgHtml = `
+      <div class="card-img-wrap">
+        <img src="${imgSrc}" alt="${a.title}" loading="lazy">
+        <button class="img-dl" onclick="downloadImage('${dlSrc}','${fname}')">⬇ Download</button>
+      </div>`;
+  } else {
+    imgHtml = '<div class="card-img-wrap"><div class="no-image">No image</div></div>';
+  }
+
+  // Metadata rows
+  const fields = [
+    ['ID', articleId],
+    ['Title', a.title],
+    ['Date', dateDisplay],
+    ['Author', a.author],
+    ['Facility', a.facility],
+    ['State', a.state],
+    ['Meta Desc.', a.meta_description],
+    ['Source URL', a.source_url],
+    ['Type', typeLabel],
+  ];
+
+  const metaRows = fields.map(([label, value]) => {
+    if (!value || value === 'Unknown') return '';
+    const display = label === 'Source URL'
+      ? `<a href="${value}" target="_blank" rel="noopener">${value}</a>`
+      : value;
+    return `
+      <div class="meta-row">
+        <span class="meta-label">${label}</span>
+        <span class="meta-value">${display}</span>
+        <button class="cp" onclick="copyText(\`${value.replace(/`/g,'\\`').replace(/\\/g,'\\\\')}\`, this)">Copy</button>
+      </div>`;
+  }).join('');
+
+  return `
+  <article class="card" data-type="${a.type}" data-state="${a.state}" data-scraped="${a.scraped_date}" data-hasimage="${imgSrc ? 'yes' : 'no'}" data-search="${(a.title + ' ' + a.facility + ' ' + a.state + ' ' + a.meta_description + ' ' + a.author + ' ' + articleId).toLowerCase()}">
+    <div class="card-select">
+      <input type="checkbox" id="sel-${articleId}" onchange="toggleSelection('${articleId}', this)">
+      <label for="sel-${articleId}">Select for VA News &nbsp;·&nbsp; <strong>${articleId}</strong></label>
+    </div>
+    <div class="card-top">
+      ${imgHtml}
+      <div class="card-summary">
+        <div class="card-badges">
+          <span class="badge ${typeClass}">${typeLabel}</span>
+          <span class="card-date-badge">${dateDisplay}</span>
+        </div>
+        <div class="card-title">${a.title}</div>
+        <div class="card-facility">${a.facility} &bull; ${a.state}</div>
+      </div>
+    </div>
+    <div class="meta-section">${metaRows}</div>
+    <div class="body-section">
+      <button class="body-toggle" onclick="toggleBody(this)">
+        <span class="arr">▶</span> View Full Article
+      </button>
+      <div class="body-wrap" data-body-idx="${idx}">
+        <div class="body-rendered"></div>
+        <div class="body-actions">
+          <button class="cp" onclick="copyText(articles[${idx}].body, this)">Copy Body (Text)</button>
+          <button class="cp" onclick="copyText(this.closest('.body-wrap').querySelector('.body-rendered').innerHTML, this)">Copy Body (HTML)</button>
+        </div>
+      </div>
+    </div>
+  </article>`;
+}
+
+/* ── Toggle body visibility ────────────────────────────────────────── */
+function toggleBody(btn) {
+  btn.classList.toggle('open');
+  const wrap = btn.nextElementSibling;
+  wrap.classList.toggle('open');
+  // Lazy-render body on first open
+  if (wrap.classList.contains('open') && !wrap.dataset.rendered) {
+    const idx = parseInt(wrap.dataset.bodyIdx);
+    wrap.querySelector('.body-rendered').innerHTML = renderMd(articles[idx].body);
+    wrap.dataset.rendered = '1';
+  }
+}
+
+/* ── Filtering ─────────────────────────────────────────────────────── */
+function applyFilters() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const type = document.getElementById('typeFilter').value;
+  const state = document.getElementById('stateFilter').value;
+  const scrape = document.getElementById('scrapeFilter').value;
+  const image = document.getElementById('imageFilter').value;
+  const cards = document.querySelectorAll('.card');
+  let shown = 0;
+
+  cards.forEach(card => {
+    const matchType = !type || card.dataset.type === type;
+    const matchState = !state || card.dataset.state === state;
+    const matchScrape = !scrape || card.dataset.scraped === scrape;
+    const matchImage = !image || card.dataset.hasimage === image;
+    const matchSearch = !search || card.dataset.search.includes(search);
+    const visible = matchType && matchState && matchSearch && matchScrape && matchImage;
+    card.style.display = visible ? '' : 'none';
+    if (visible) shown++;
+  });
+
+  document.getElementById('filterCount').textContent = `Showing ${shown} of ${articles.length}`;
+}
+
+/* ── Main ──────────────────────────────────────────────────────────── */
+let articles = [];
+
+fetch('data.json')
+  .then(r => r.json())
+  .then(data => {
+    articles = data.articles;
+
+    // Stats
+    const stories = articles.filter(a => a.type === 'stories').length;
+    const releases = articles.filter(a => a.type === 'news-releases').length;
+    const facilities = new Set(articles.map(a => a.facility)).size;
+    const states = [...new Set(articles.map(a => a.state))].sort();
+    const scrapeDates = [...new Set(articles.map(a => a.scraped_date))].sort().reverse();
+
+    document.getElementById('stats').innerHTML = `
+      <span class="stat-chip"><strong>${data.total_articles}</strong> Articles</span>
+      <span class="stat-chip"><strong>${stories}</strong> Stories</span>
+      <span class="stat-chip"><strong>${releases}</strong> News Releases</span>
+      <span class="stat-chip"><strong>${facilities}</strong> Facilities</span>
+      <span class="stat-chip"><strong>${states.length}</strong> States</span>
+    `;
+
+    // Populate state filter
+    const stateSelect = document.getElementById('stateFilter');
+    states.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      stateSelect.appendChild(opt);
+    });
+
+    // Populate scrape date filter and default to latest
+    const scrapeSelect = document.getElementById('scrapeFilter');
+    scrapeDates.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = 'Scraped: ' + d;
+      scrapeSelect.appendChild(opt);
+    });
+    if (scrapeDates.length > 0) {
+      scrapeSelect.value = scrapeDates[0];  // Default to latest scrape
+    }
+
+    // Render cards
+    document.getElementById('articles').innerHTML = articles.map(buildCard).join('');
+    applyFilters();
+  })
+  .catch(err => {
+    document.getElementById('articles').innerHTML =
+      '<div class="empty">Could not load data.json. Run <code>python build_site.py</code> first.</div>';
+  });
+
+// Filter event listeners
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('typeFilter').addEventListener('change', applyFilters);
+document.getElementById('stateFilter').addEventListener('change', applyFilters);
+document.getElementById('scrapeFilter').addEventListener('change', applyFilters);
+document.getElementById('imageFilter').addEventListener('change', applyFilters);
+</script>
+
+</body>
+</html>
