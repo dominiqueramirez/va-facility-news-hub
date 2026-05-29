@@ -114,21 +114,61 @@ Then open `http://localhost:8080` in your browser.
 
 ```powershell
 python scraper.py           # 1. Scrape new content
-python build_site.py        # 2. Rebuild the site
-git add . ; git commit -m "Scrape $(Get-Date -Format yyyy-MM-dd)" ; git push
+python build_site.py        # 2. Rebuild the site data + copy images
+git add docs/ ; git commit -m "Scrape $(Get-Date -Format yyyy-MM-dd)" ; git push
 ```
+
+Then share the GitHub Pages URL with your coworker to review.
 
 ### Frontend features
 
-- **125+ articles** sorted newest-first
-- **Filter** by type (Story / News Release), state, or search text
-- **Copy buttons** on every metadata field (title, date, author, facility, state, meta description, source URL, type)
-- **Copy Body** — copy article text as plain text or HTML for WordPress
+- **Filter** by type (Story / News Release), state, scrape date, or image availability
+- **Scrape date defaults to the latest run** — reviewers only see fresh content
+- **Checkbox on every card** to select articles for VA News
+- **Floating selection bar** — shows count + comma-separated IDs, with a Copy IDs button
+- **Copy buttons** on every metadata field
+- **Copy Body** — copy article text as plain text or HTML
 - **Download** hero images with one click
 - **Expandable full article** view with rendered markdown
-- Encoding is forced to UTF-8 (VA.gov doesn't declare it in HTTP headers)
-- Rate-limited to ~2 requests/second to be respectful to VA.gov servers
-- Each run is self-contained in its date folder — old runs are never overwritten
-- Typical full run (134 facilities) takes a few minutes
-- If a facility has no new content, it's skipped silently (noted in console output)
-- Stories use `bodyContent` from JSON; news releases use `fullText`
+
+---
+
+## Publishing to VA News (news.va.gov)
+
+### Setup (first time only)
+
+Add your WordPress credentials to `.env` (never commit this file):
+
+```
+WP_USERNAME=your_wordpress_username
+WP_APP_PASSWORD=xxxx xxxx xxxx xxxx xxxx xxxx
+WP_SITE_URL=https://news.va.gov
+```
+
+Generate the Application Password at: `https://news.va.gov/wp-admin/profile.php` → Application Passwords section.
+
+### Workflow
+
+1. **Coworker** reviews the GitHub Pages site, checks articles they want, clicks **Copy IDs**
+2. **You** receive the comma-separated ID list (e.g. `20260519-A3F2, 20260519-B1C4`)
+3. **You** run:
+
+```powershell
+python publish.py 20260519-A3F2, 20260519-B1C4, 20260519-D7E9
+```
+
+4. The script shows you exactly what will be published and asks you to type `yes` to confirm
+5. It uploads hero images and creates **draft posts only** — nothing is auto-published
+6. Jason reviews and publishes drafts at his leisure from the VA News WordPress dashboard
+
+### Article IDs
+
+Each article has a deterministic ID in the format `YYYYMMDD-XXXX` (e.g. `20260519-A3F2`).  
+The same article always gets the same ID across all scrape runs (derived from its source URL + date).
+
+### Safety
+
+- `publish.py` will **never publish** without your explicit `yes` confirmation
+- All posts are created as `draft` status — never auto-published
+- Credentials are read from `.env` only — never hardcoded
+- `.env` is in `.gitignore` and will never be committed
