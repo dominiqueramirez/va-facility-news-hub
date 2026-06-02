@@ -59,6 +59,53 @@ BASE_URL = 'https://www.va.gov'
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 
+def find_last_run_date(output_base):
+    """Return the most recent run date folder (excluding today) as a date string, or None."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    output_path = Path(output_base)
+    if not output_path.exists():
+        return None
+    candidates = [
+        d.name for d in output_path.iterdir()
+        if d.is_dir() and re.match(r'\d{4}-\d{2}-\d{2}$', d.name) and d.name != today
+    ]
+    return max(candidates) if candidates else None
+
+
+def collect_seen_urls(output_base, max_runs=2):
+    """
+    Scan the most recent N previous run folders and return the set of source_urls
+    already scraped. Limiting to max_runs keeps the lookup fast.
+    """
+    seen = set()
+    output_path = Path(output_base)
+    if not output_path.exists():
+        return seen
+
+    today = datetime.now().strftime('%Y-%m-%d')
+    # Sort descending, exclude today, take the most recent max_runs folders
+    prev_runs = sorted(
+        [d for d in output_path.iterdir()
+         if d.is_dir() and re.match(r'\d{4}-\d{2}-\d{2}$', d.name) and d.name != today],
+        key=lambda d: d.name,
+        reverse=True,
+    )[:max_runs]
+
+    for run_dir in prev_runs:
+        for md_file in run_dir.rglob('*.md'):
+            if md_file.name.startswith('_'):
+                continue
+            try:
+                text = md_file.read_text(encoding='utf-8')
+                m = re.search(r'^source_url:\s*\"(.+?)\"', text, re.MULTILINE)
+                if m:
+                    seen.add(m.group(1).strip())
+            except Exception:
+                pass
+
+    return seen
+
+
 def parse_iso_date(text):
     """Parse an ISO 8601 date string into a naive datetime (UTC)."""
     if not text:
@@ -111,12 +158,38 @@ def extract_page_json(html_text):
 # ── Scraper ──────────────────────────────────────────────────────────────────
 
 class VAScraper:
-    def __init__(self, csv_path, output_base, days=7):
+    def __init__(self, csv_path, output_base, days=None):
         self.csv_path = Path(csv_path)
-        self.days = days
-        self.cutoff = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None) - timedelta(days=days)
         self.run_date = datetime.now().strftime('%Y-%m-%d')
         self.output_dir = Path(output_base) / self.run_date
+
+        # Determine cutoff: use last run date if --days not specified
+        if days is None:
+            last_run = find_last_run_date(output_base)
+            if last_run:
+                self.cutoff = datetime.strptime(last_run, '%Y-%m-%d')
+                self.days = (datetime.now() - self.cutoff).days
+                self.cutoff_label = f'since last run on {self.cutoff.strftime("%B %d, %Y")}'
+            else:
+                self.days = 7
+                self.cutoff = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=7)
+                self.cutoff_label = 'past 7 days (no previous run found)'
+        else:
+            self.days = days
+            self.cutoff = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            self.cutoff_label = f'past {days} days (since {self.cutoff.strftime("%B %d, %Y")})'
+
+        # Collect URLs from the last 2 runs — skip any already scraped
+        today = datetime.now().strftime('%Y-%m-%d')
+        prev_runs = sorted(
+            [d.name for d in Path(output_base).iterdir()
+             if d.is_dir() and re.match(r'\d{4}-\d{2}-\d{2}$', d.name) and d.name != today],
+            reverse=True,
+        )[:2] if Path(output_base).exists() else []
+        if prev_runs:
+            print(f'Deduplicating against: {", ".join(prev_runs)}')
+        self.seen_urls = collect_seen_urls(output_base, max_runs=2)
+        print(f'  {len(self.seen_urls)} URLs already on record — will skip duplicates.')
 
         self.session = requests.Session()
         self.session.headers.update({'User-Agent': USER_AGENT})
@@ -257,6 +330,12 @@ class VAScraper:
                 continue
 
             full_url = BASE_URL + link
+
+            # Skip if we already have this article from a previous run
+            if full_url in self.seen_urls:
+                print(f"    SKIP  (already scraped) {title}")
+                continue
+
             found = True
 
             try:
@@ -464,7 +543,7 @@ class VAScraper:
             '# VA Facility News Scraper — Run Summary',
             '',
             f'**Run date:** {self.run_date}  ',
-            f'**Window:** Past {self.days} days (since {self.cutoff.strftime("%B %d, %Y")})  ',
+            f'**Window:** {self.cutoff_label}  ',
             f'**Facilities checked:** {self.facilities_checked}  ',
             f'**Pages fetched:** {self.pages_fetched}  ',
             '',
@@ -514,8 +593,8 @@ def main():
     parser = argparse.ArgumentParser(
         description='Scrape VA medical facility news releases and stories.'
     )
-    parser.add_argument('--days', type=int, default=7,
-                        help='Look-back window in days (default: 7)')
+    parser.add_argument('--days', type=int, default=None,
+                        help='Look-back window in days (default: auto — since last run)')
     parser.add_argument('--test', type=int, default=None,
                         help='Only process the first N facilities (for testing)')
     parser.add_argument('--csv', type=str, default=None,
