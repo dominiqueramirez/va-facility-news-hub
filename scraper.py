@@ -393,13 +393,13 @@ class VAScraper:
         hero_image_alt = ''
         image_data = article.get('image')
         if isinstance(image_data, dict):
+            # Alt text is a top-level field on the image object
+            hero_image_alt = image_data.get('alt', '')
             links = image_data.get('links', {})
             # Prefer 2:1 large, fall back to others
             for size_key in ['2_1_large', '2_1_medium', '1_1_square_large', '3_2_medium_thumbnail']:
                 if size_key in links:
                     hero_image_url = links[size_key].get('href', '')
-                    meta = links[size_key].get('meta', {})
-                    hero_image_alt = meta.get('linkParams', {}).get('alt', '')
                     break
 
         # Build file
@@ -452,6 +452,7 @@ class VAScraper:
             f'author: "{author_line or "Unknown"}"',
             f'meta_description: "{meta_description}"',
             f'hero_image_url: "{hero_image_url or ""}"',
+            f'hero_image_alt: "{(hero_image_alt or "").replace(chr(34), chr(39))}"',
             f'source_url: "{url}"',
             f'scraped_date: "{self.run_date}"',
             '---',

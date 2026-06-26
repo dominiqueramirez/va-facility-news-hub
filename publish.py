@@ -126,7 +126,7 @@ def inline_md(text):
     return text
 
 
-def upload_image(image_path, headers, site_url):
+def upload_image(image_path, headers, site_url, alt_text=''):
     """Upload an image to WordPress media library. Returns media ID or None."""
     if not image_path or not Path(image_path).exists():
         return None
@@ -151,7 +151,15 @@ def upload_image(image_path, headers, site_url):
 
     if resp.status_code == 201:
         media = resp.json()
-        return media.get('id')
+        media_id = media.get('id')
+        # Set alt text (and a human-readable title) on the uploaded media
+        if media_id and alt_text:
+            requests.post(
+                f'{site_url}/wp-json/wp/v2/media/{media_id}',
+                headers=headers,
+                json={'alt_text': alt_text, 'title': alt_text}
+            )
+        return media_id
     else:
         print(f"  WARNING: Image upload failed ({resp.status_code}): {resp.text[:200]}")
         return None
@@ -169,7 +177,8 @@ def publish_article(article, headers, site_url, docs_dir):
         full_path = docs_dir / hero_path
         if full_path.exists():
             print(f"  Uploading hero image: {hero_path}")
-            featured_media_id = upload_image(full_path, headers, site_url)
+            featured_media_id = upload_image(full_path, headers, site_url,
+                                             alt_text=article.get('hero_image_alt', ''))
             if featured_media_id:
                 print(f"  Image uploaded (media ID: {featured_media_id})")
 

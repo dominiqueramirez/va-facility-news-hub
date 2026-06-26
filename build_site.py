@@ -147,6 +147,7 @@ def build_site(project_dir):
                     'author': metadata.get('author', 'Unknown'),
                     'meta_description': metadata.get('meta_description', ''),
                     'hero_image_url': metadata.get('hero_image_url', ''),
+                    'hero_image_alt': metadata.get('hero_image_alt', ''),
                     'source_url': source_url,
                     'scraped_date': metadata.get('scraped_date', ''),
                     'hero_image': hero_site_path,
